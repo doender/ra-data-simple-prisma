@@ -1,7 +1,7 @@
+import setObjectProp from "set-value";
 import { GetListRequest, GetManyReferenceRequest } from "./Http";
 import { isNotField } from "./lib/isNotField";
 import { isObject } from "./lib/isObject";
-import setObjectProp from "set-value";
 
 const logicalOperators = ["gte", "lte", "lt", "gt", "enum"];
 
@@ -31,9 +31,14 @@ export const extractWhere = (
       const hasOperator = logicalOperators.some((operator) => {
         if (colName.endsWith(`_${operator}`)) {
           [colName] = colName.split(`_${operator}`);
-          operator === "enum" 
+          operator === "enum"
             ? setObjectProp(where, colName, value)
-            : setObjectProp(where, colName, { [operator]: value }, { merge: true });
+            : setObjectProp(
+                where,
+                colName,
+                { [operator]: value },
+                { merge: true }
+              );
           return true;
         }
       });
@@ -59,12 +64,8 @@ export const extractWhere = (
           mode: options?.filterMode,
         });
       } else if (isObject(value)) {
-        // if object then it's a Json field, this is EXPERIMENTAL and works only for Postgres
-        // https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filter-on-object-property
-        const { path, equals } = getPostgresJsonFilter(value);
-        if (path.length && equals) {
-          setObjectProp(where, colName, { path, equals });
-        }
+        // Experimental: directly use filter object from client
+        setObjectProp(where, colName, value);
       } else {
         console.info("Filter not handled:", colName, value);
       }
